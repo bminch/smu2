@@ -34820,7 +34820,7 @@
 				)
 			)
 		)
-		(property "Value" "909"
+		(property "Value" "5.1K"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(hide yes)
