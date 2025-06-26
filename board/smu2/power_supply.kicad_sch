@@ -6,7 +6,7 @@
 	(paper "B")
 	(title_block
 		(title "SMU 2.0")
-		(date "2025-05-29")
+		(date "2025-06-21")
 		(company "Olin College of Engineering")
 	)
 	(lib_symbols
