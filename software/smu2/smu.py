@@ -256,6 +256,79 @@ class smu:
                 done = True
             self.set_current_range(channel, current_range)
 
+    def get_smu_state(self):
+        if not self.dev.connected:
+            return
+
+        [ch1_mode, ch1_src_dac_val, ch1_meas_adc_val, ch2_mode, ch2_src_dac_val, ch2_meas_adc_val] = self.dev.get_smu_state()
+
+        ch1_current_range = ch1_mode & 0x03
+        ch1_src_function = 'CURRENT' if (ch1_mode & 0x08) != 0 else 'VOLTAGE'
+        if ch1_src_function == 'CURRENT':
+            ch1_src_val = (ch1_src_dac_val - self.src_current_offsets[0][ch1_current_range]) / self.src_current_gains[0][ch1_current_range]
+        else:
+            ch1_src_val = (ch1_src_dac_val - self.src_voltage_offsets[0][ch1_current_range]) / self.src_voltage_gains[0][ch1_current_range]
+        ch1_meas_function = 'VOLTAGE' if (ch1_mode & 0x04) != 0 else 'CURRENT'
+        if ch1_meas_function == 'CURRENT':
+            ch1_meas_val = self.meas_current_gains[0][ch1_current_range] * (ch1_meas_adc_val + self.meas_current_offsets[0][ch1_current_range])
+        else:
+            ch1_meas_val = self.meas_voltage_gain[0] * (ch1_meas_adc_val + self.meas_voltage_offset[0])
+
+        ch2_current_range = ch2_mode & 0x03
+        ch2_src_function = 'CURRENT' if (ch2_mode & 0x08) != 0 else 'VOLTAGE'
+        if ch2_src_function == 'CURRENT':
+            ch2_src_val = (ch2_src_dac_val - self.src_current_offsets[1][ch2_current_range]) / self.src_current_gains[1][ch2_current_range]
+        else:
+            ch2_src_val = (ch2_src_dac_val - self.src_voltage_offsets[1][ch2_current_range]) / self.src_voltage_gains[1][ch2_current_range]
+        ch2_meas_function = 'VOLTAGE' if (ch2_mode & 0x04) != 0 else 'CURRENT'
+        if ch2_meas_function == 'CURRENT':
+            ch2_meas_val = self.meas_current_gains[1][ch2_current_range] * (ch2_meas_adc_val + self.meas_current_offsets[1][ch2_current_range])
+        else:
+            ch2_meas_val = self.meas_voltage_gain[1] * (ch2_meas_adc_val + self.meas_voltage_offset[1])
+
+        return [ch1_current_range, ch1_src_function, ch1_src_val, ch1_meas_function, ch1_meas_val, 
+                ch2_current_range, ch2_src_function, ch2_src_val, ch2_meas_function, ch2_meas_val]
+
+    def get_smu_state_string(self):
+        if not self.dev.connected:
+            return
+
+        src_voltage_format_str = '{:+08.4f}V'
+
+        meas_voltage_format_str = '{:+08.4f}V'
+
+        src_current_format_strs = ['{:+08.5f}mA', '{:+08.3f}\xb5A', '{:+08.5f}\xb5A', '{:+08.3f}nA']
+        src_current_multipliers = [1e3, 1e6, 1e6, 1e9]
+
+        meas_current_format_strs = ['{:+08.5f}mA', '{:+08.3f}\xb5A', '{:+08.5f}\xb5A', '{:+08.3f}nA']
+        meas_current_multipliers = [1e3, 1e6, 1e6, 1e9]
+
+        [ch1_current_range, ch1_src_function, ch1_src_val, ch1_meas_function, ch1_meas_val, 
+         ch2_current_range, ch2_src_function, ch2_src_val, ch2_meas_function, ch2_meas_val] = self.get_smu_state()
+
+        if ch1_src_function == 'CURRENT':
+            ch1_src_val_str = src_current_format_strs[ch1_current_range].format(src_current_multipliers[ch1_current_range] * ch1_src_val)
+        else:
+            ch1_src_val_str = src_voltage_format_str.format(ch1_src_val)
+
+        if ch1_meas_function == 'CURRENT':
+            ch1_meas_val_str = meas_current_format_strs[ch1_current_range].format(meas_current_multipliers[ch1_current_range] * ch1_meas_val)
+        else:
+            ch1_meas_val_str = meas_voltage_format_str.format(ch1_meas_val)
+
+        if ch2_src_function == 'CURRENT':
+            ch2_src_val_str = src_current_format_strs[ch2_current_range].format(src_current_multipliers[ch2_current_range] * ch2_src_val)
+        else:
+            ch2_src_val_str = src_voltage_format_str.format(ch2_src_val)
+
+        if ch2_meas_function == 'CURRENT':
+            ch2_meas_val_str = meas_current_format_strs[ch2_current_range].format(meas_current_multipliers[ch2_current_range] * ch2_meas_val)
+        else:
+            ch2_meas_val_str = meas_voltage_format_str.format(ch2_meas_val)
+
+        return [ch1_current_range, ch1_src_function, ch1_src_val_str, ch1_meas_function, ch1_meas_val_str, 
+                ch2_current_range, ch2_src_function, ch2_src_val_str, ch2_meas_function, ch2_meas_val_str]
+
     def read_serial_number(self):
         if not self.dev.connected:
             return ''
