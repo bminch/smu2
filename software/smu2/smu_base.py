@@ -297,6 +297,24 @@ class smu_base:
                 self.write(f'MODE:RE{int(bit)}?')
                 return int(self.read())
 
+    def get_smu_state(self):
+        if self.connected:
+            self.write('SMU?')
+            ret = self.read()
+            vals = [int(s, 16) for s in ret.split(',')]
+
+            ch1_mode = vals[0]
+            ch1_src_val = vals[1] - vals[2]
+            ch1_meas_val = (vals[4] << 16) + vals[3]
+            ch1_meas_val = ch1_meas_val if ch1_meas_val < 2147483648 else ch1_meas_val - 4294967296
+
+            ch2_mode = vals[5]
+            ch2_src_val = vals[6] - vals[7]
+            ch2_meas_val = (vals[9] << 16) + vals[8]
+            ch2_meas_val = ch2_meas_val if ch2_meas_val < 2147483648 else ch2_meas_val - 4294967296
+
+            return [ch1_mode, ch1_src_val, ch1_meas_val, ch2_mode, ch2_src_val, ch2_meas_val]
+
     def digout_set_mode(self, pin, mode):
         if self.connected:
             self.write(f'DIGOUT:MODE {int(pin):X},{int(mode):X}')

@@ -25,6 +25,7 @@ void dac10_handler(char *args);
 void dac16_handler(char *args);
 void adc18_handler(char *args);
 void mode_handler(char *args);
+void smuQ_handler(char *args);
 void digout_handler(char *args);
 void ble_handler(char *args);
 void flash_handler(char *args);
@@ -35,6 +36,7 @@ DISPATCH_ENTRY_T root_table[] = {{ "UI", ui_handler },
                                  { "DAC16", dac16_handler }, 
                                  { "ADC18", adc18_handler }, 
                                  { "MODE", mode_handler }, 
+                                 { "SMU?", smuQ_handler }, 
                                  { "DIGOUT", digout_handler }, 
                                  { "BLE", ble_handler }, 
                                  { "FLASH", flash_handler }};
@@ -728,10 +730,10 @@ void dac16_ch1_handler(char *args) {
 void dac16_ch1Q_handler(char *args) {
     char str[5];
 
-    hex2str_alt(dac16_get_dac1(), str);
+    hex2str_alt(dac16_get_dac3(), str);
     parser_puts(str);
     parser_putc(',');
-    hex2str_alt(dac16_get_dac0(), str);
+    hex2str_alt(dac16_get_dac2(), str);
     parser_puts(str);
     parser_puts("\r\n");
 }
@@ -752,10 +754,10 @@ void dac16_ch2_handler(char *args) {
 void dac16_ch2Q_handler(char *args) {
     char str[5];
 
-    hex2str_alt(dac16_get_dac3(), str);
+    hex2str_alt(dac16_get_dac1(), str);
     parser_puts(str);
     parser_putc(',');
-    hex2str_alt(dac16_get_dac2(), str);
+    hex2str_alt(dac16_get_dac0(), str);
     parser_puts(str);
     parser_puts("\r\n");
 }
@@ -1284,6 +1286,46 @@ void re6Q_handler(char *args) {
         parser_puts("1\r\n");
     else
         parser_puts("0\r\n");
+}
+
+// SMU? handler
+void smuQ_handler(char *args) {
+    int32_t val1, val2;
+    char str[5];
+
+    adc18_meas_both_avg(&val1, &val2);
+
+    hex2str_alt(LATD & 0x7F, str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt(dac16_get_dac3(), str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt(dac16_get_dac2(), str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt((uint16_t)(val1 & 0xFFFF), str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt((uint16_t)((uint32_t)val1 >> 16), str);
+    parser_puts(str);
+    parser_putc(',');
+
+    hex2str_alt(LATE & 0x7F, str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt(dac16_get_dac1(), str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt(dac16_get_dac0(), str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt((uint16_t)(val2 & 0xFFFF), str);
+    parser_puts(str);
+    parser_putc(',');
+    hex2str_alt((uint16_t)((uint32_t)val2 >> 16), str);
+    parser_puts(str);
+    parser_puts("\r\n");
 }
 
 // DIGOUT commands
